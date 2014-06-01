@@ -1,12 +1,11 @@
 CFLAGS = -pedantic -ggdb -pedantic-errors -Wall -Werror
 
-all : client server
+all : 
 
-client : client.cc common.o
-	g++ $(CFLAGS) $< common.o -o $@
+.phony : client server
 
-server: server.cc common.o
-	g++ $(CFLAGS) $< common.o -o $@
+client : client.cc common.cc
+	g++ $(CFLAGS) client.cc common.cc -o $@
 
-common.o : common.cc
-	g++ $(CFLAGS) $< -c
+server: server.cc common.cc
+	g++ $(CFLAGS) server.cc common.cc -o $@

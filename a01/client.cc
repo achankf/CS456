@@ -32,12 +32,12 @@ int map_hostname(char *hostname, int *ip){
 	return 0;
 }
 
-int send_request(int serverfd) {
-	int count, retval = 0, request = 13;
-	char buf[BUF_SIZE];
+int start_negotiation(int serverfd) {
+	int count, retval = 0;
+	char buf[2];
 
-	snprintf(buf, BUF_SIZE, "%d", request);
-	count = write(serverfd, buf, BUF_SIZE);
+	snprintf(buf, BUF_SIZE, "%c", REQUEST);
+	count = write(serverfd, buf, sizeof(buf));
 	if (count <= 0) {
 		puts("Cannot send the request to the server");
 		return -1;
@@ -49,7 +49,7 @@ int send_request(int serverfd) {
 int get_udp_port(int serverfd, int *udp_port) {
 	int retval = 0, count;
 	char buf[BUF_SIZE];
-	count = read(serverfd, buf, BUF_SIZE-1);
+	count = read(serverfd, buf, sizeof(buf) -1);
 	if (count <= 0) {
 		puts("Cannot read from the server");
 		return -1;
@@ -77,7 +77,7 @@ int send_and_recieve_msg(int ip, int port, char *msg){
 }
 
 
-int connect_server(int ip, int port, int *serverfd) {
+int make_tcp_connection(int ip, int port, int *serverfd) {
 
 	int temp_serverfd, retval = 0;
 	struct sockaddr_in server_info = {0};
@@ -112,12 +112,12 @@ int main(int argc, char **argv) {
 		return retval;
 	}
 
-	retval = connect_server(ip, atoi(argv[2]), &serverfd);
+	retval = make_tcp_connection(ip, atoi(argv[2]), &serverfd);
 	if (retval < 0) {
 		return retval;
 	}
 
-	retval = send_request(serverfd);
+	retval = start_negotiation(serverfd);
 	if (retval < 0) {
 		goto MAIN_BAD_DEALLOC;
 	}

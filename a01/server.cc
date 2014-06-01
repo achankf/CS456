@@ -67,7 +67,7 @@ int get_requests(int serverfd, int *udp_socketfd) {
 		goto BAD_CLIENT_REQUEST;
 	}
 
-	request_num = atoi(buf);
+	request_num = buf[0];
 	printf("GOT request: %d\n", request_num);
 
 	if (request_num != REQUEST) {
@@ -111,13 +111,14 @@ int main(int argc, char **argv) {
 	}
 
 	printf("Port opened: %d\n", port);
-	retval = get_requests(serverfd, &udp_socketfd);
-	if (retval < 0) {
-		goto MAIN_BAD_DEALLOC;
+
+	while (true) {
+		/* ignore retval */
+		get_requests(serverfd, &udp_socketfd);
 	}
 
+	/* not reached */
 	close(serverfd);
-
 	return retval;
 
 MAIN_BAD_DEALLOC:
