@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,6 +15,7 @@ static void usage() {
 
 /** set up the server address structure */
 static void make_server_info(int ip, int port, struct sockaddr_in *server_info){
+	assert(server_info != NULL);
 	memset(server_info, 0, sizeof(struct sockaddr_in));
 	server_info->sin_family = AF_INET;
 	server_info->sin_port = htons(port);
@@ -23,6 +25,9 @@ static void make_server_info(int ip, int port, struct sockaddr_in *server_info){
 /** Turn hostname into its IP address */
 static int map_hostname(char *hostname, int *ip){
 	struct hostent* server_entity;
+
+	assert(hostname != NULL);
+	assert(ip != NULL);
 	
 	server_entity =gethostbyname(hostname);
 	if (server_entity == NULL) {
@@ -34,6 +39,7 @@ static int map_hostname(char *hostname, int *ip){
 	return 0;
 }
 
+/** Just send the character with value 13 */
 static int start_negotiation(int serverfd) {
 	int count;
 	char buf[2];
@@ -48,14 +54,20 @@ static int start_negotiation(int serverfd) {
 	return 0;
 }
 
+/** Get the udp port after the negotiation has started */
 static int get_udp_port(int serverfd, int *udp_port) {
 	int count;
 	char buf[5];
+
+	assert(udp_port != NULL);
+
 	count = read(serverfd, buf, sizeof(buf) -1);
 	if (count <= 0) {
 		puts("Cannot read from the server");
 		return -1;
 	}
+
+	/* set the port number here */
 	*udp_port = ntohl(*(int*)buf);
 	return 0;
 }
@@ -64,6 +76,8 @@ static int send_and_recieve_msg(int ip, int port, char *msg){
 	struct sockaddr_in server_info;
 	int udp_socketfd;
 	char buf[BUF_SIZE] = {0};
+
+	assert(msg != NULL);
 
 	make_server_info(ip, port, &server_info);
 	make_bind_socket(0, SOCK_DGRAM, &udp_socketfd);
@@ -83,6 +97,8 @@ static int make_tcp_connection(int ip, int port, int *serverfd) {
 
 	int temp_serverfd;
 	struct sockaddr_in server_info = {0};
+
+	assert(serverfd != NULL);
 
 	if (make_socket(SOCK_STREAM, &temp_serverfd) < 0) {
 		return -1;
