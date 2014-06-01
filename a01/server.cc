@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include <stdbool.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -8,120 +9,114 @@
 #include <unistd.h>
 #include "common.h"
 
-#include <string>
+#include <string> /* std::string */
 #include <algorithm> /* std::reverse */
 
-int get_and_reply_msg(int udp_socketfd){
-	int retval = 0;
+static int get_and_reply_msg(int udp_socketfd){
 	char buf[BUF_SIZE] = {0};
 	struct sockaddr_in client_info;
 	socklen_t info_len = sizeof(struct sockaddr_in);
+
 	recvfrom(udp_socketfd, buf, BUF_SIZE, 0, (struct sockaddr*) &client_info, &info_len);
 
+	/* do the reverse */
 	std::string msg(buf);
 	std::reverse(msg.begin(), msg.end());
-	puts(msg.c_str());
 
 	sendto(udp_socketfd, msg.c_str(), msg.size(), 0, (struct sockaddr*) &client_info, info_len);
-	return retval;
+	return 0;
 }
 
-int reply_udp_port(int clientfd, int *udp_socketfd) {
-	int count, len, retval = 0;
-	char buf[BUF_SIZE] = {0};
+static int reply_udp_port(int clientfd) {
+	int count, port, udp_socketfd;
+	char port_buf[BUF_SIZE] = {0};
 
-	int udp_port;
+	make_udp_socket(&udp_socketfd, &port);
+	port = htonl(port);
+	memcpy(port_buf, &port, sizeof(int));
 
-	make_udp_socket(udp_socketfd, &udp_port);
-
-	len = snprintf(buf, BUF_SIZE, "%d", udp_port);
-	count = write(clientfd, buf, len+1);
+	count = write(clientfd, port_buf, sizeof(port_buf));
 	if (count <= 0) {
 		puts("Cannot write the udp port to the client");
-		close(*udp_socketfd);
+		close(udp_socketfd);
 		return -1;
 	}
-	
-	get_and_reply_msg(*udp_socketfd);
 
-	return retval;
+	printf("Reply with port: %d\n", ntohl(*(int*)port_buf));
+	get_and_reply_msg(udp_socketfd);
+
+	puts("Closing udp socket");
+	close(udp_socketfd);
+
+	return 0;
 }
 
-int get_requests(int serverfd, int *udp_socketfd) {
-	int clientfd, retval = 0;
+static int handle_requests(int serverfd) {
+	int clientfd, count, request_num;
 	char buf[BUF_SIZE];
-	int count, request_num;
 
-	retval = clientfd = accept(serverfd, NULL, NULL);
+	clientfd = accept(serverfd, NULL, NULL);
 
 	if (clientfd < 0) {
-		return retval;
+		return -1;
 	}
 
 	puts("Client connected");
 
 	memset(buf, 0, BUF_SIZE);
-	count = read(clientfd, buf, BUF_SIZE);
+	/* read one character (i.e. 13) */
+	count = read(clientfd, buf, 1);
 	if (count <= 0) {
 		puts("Cannot read client request");
-		goto BAD_CLIENT_REQUEST;
+		close (clientfd);
+		return -1;
 	}
 
 	request_num = buf[0];
 	printf("GOT request: %d\n", request_num);
 
 	if (request_num != REQUEST) {
-		printf("Got invalid request num: %d", request_num);
-		retval = -1;
-		goto BAD_CLIENT_REQUEST;
+		printf("Got invalid request num: %d\n", request_num);
+		close (clientfd);
+		return -1;
 	}
 
-	retval = reply_udp_port(clientfd, udp_socketfd);
-	if (retval < 0) {
-		goto BAD_CLIENT_REQUEST;
+	if (reply_udp_port(clientfd) < 0) {
+		close (clientfd);
+		return -1;
 	}
 
-	return retval;
-
-BAD_CLIENT_REQUEST:
 	puts("Disconnecting client");
 	close (clientfd);
-
-	/* unreachable */
-	return retval;
+	return 0;
 }
 
 int main(int argc, char **argv) {
-	int serverfd, udp_socketfd, retval = 0;
-	int port;
+	int serverfd, port;
 
 	/* set a random seed */
 	srand (time(NULL));
 	port = 2000 + rand() % 20000;
 
-	retval = make_bind_socket(port, SOCK_STREAM, &serverfd);
-	if (retval < 0) {
-		return retval;
+	/* make and bind to a socket */
+	if (make_bind_socket(port, SOCK_STREAM, &serverfd) < 0) {
+		return -1;
 	}
 
-	retval = listen(serverfd, 100);
-	if (retval < 0) {
+	/* listen to the socket */
+	if (listen(serverfd, 100) < 0) {
 		puts("Cannot listen to server's fd");
-		goto MAIN_BAD_DEALLOC;
+		close(serverfd);
+		return -1;
 	}
 
-	printf("Port opened: %d\n", port);
+	printf("n_port=%d\n", port);
 
 	while (true) {
-		/* ignore retval */
-		get_requests(serverfd, &udp_socketfd);
+		handle_requests(serverfd);
 	}
 
-	/* not reached */
-	close(serverfd);
-	return retval;
-
-MAIN_BAD_DEALLOC:
-	close(serverfd);
-	return retval;
+	/* must not reach */
+	assert(false);
+	return -1;
 }

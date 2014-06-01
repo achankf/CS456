@@ -7,19 +7,21 @@
 #include <unistd.h>
 #include "common.h"
 
-void usage() {
+static void usage() {
 	puts("usage: client host n_port msg");
 	exit(-1);
 }
 
-void make_server_info(int ip, int port, struct sockaddr_in *server_info){
+/** set up the server address structure */
+static void make_server_info(int ip, int port, struct sockaddr_in *server_info){
 	memset(server_info, 0, sizeof(struct sockaddr_in));
 	server_info->sin_family = AF_INET;
 	server_info->sin_port = htons(port);
 	memcpy(&server_info->sin_addr, &ip, sizeof(int));
 }
 
-int map_hostname(char *hostname, int *ip){
+/** Turn hostname into its IP address */
+static int map_hostname(char *hostname, int *ip){
 	struct hostent* server_entity;
 	
 	server_entity =gethostbyname(hostname);
@@ -32,8 +34,8 @@ int map_hostname(char *hostname, int *ip){
 	return 0;
 }
 
-int start_negotiation(int serverfd) {
-	int count, retval = 0;
+static int start_negotiation(int serverfd) {
+	int count;
 	char buf[2];
 
 	snprintf(buf, BUF_SIZE, "%c", REQUEST);
@@ -43,23 +45,22 @@ int start_negotiation(int serverfd) {
 		return -1;
 	}
 
-	return retval;
+	return 0;
 }
 
-int get_udp_port(int serverfd, int *udp_port) {
-	int retval = 0, count;
-	char buf[BUF_SIZE];
+static int get_udp_port(int serverfd, int *udp_port) {
+	int count;
+	char buf[5];
 	count = read(serverfd, buf, sizeof(buf) -1);
 	if (count <= 0) {
 		puts("Cannot read from the server");
 		return -1;
 	}
-	*udp_port = atoi(buf);
-	return retval;
+	*udp_port = ntohl(*(int*)buf);
+	return 0;
 }
 
-int send_and_recieve_msg(int ip, int port, char *msg){
-	int retval = 0;
+static int send_and_recieve_msg(int ip, int port, char *msg){
 	struct sockaddr_in server_info;
 	int udp_socketfd;
 	char buf[BUF_SIZE] = {0};
@@ -67,74 +68,60 @@ int send_and_recieve_msg(int ip, int port, char *msg){
 	make_server_info(ip, port, &server_info);
 	make_bind_socket(0, SOCK_DGRAM, &udp_socketfd);
 
+	/* send message and recieve results */
 	sendto(udp_socketfd, msg, strlen(msg), 0, (struct sockaddr*) &server_info, sizeof(struct sockaddr_in));
-
 	recvfrom(udp_socketfd, buf, BUF_SIZE, 0, NULL, NULL);
 
+	/* print the result */
 	puts(buf);
 
-	return retval;
+	return 0;
 }
 
 
-int make_tcp_connection(int ip, int port, int *serverfd) {
+static int make_tcp_connection(int ip, int port, int *serverfd) {
 
-	int temp_serverfd, retval = 0;
+	int temp_serverfd;
 	struct sockaddr_in server_info = {0};
 
-	retval = make_socket(SOCK_STREAM, &temp_serverfd);
-	if (retval < 0) {
-		return retval;
+	if (make_socket(SOCK_STREAM, &temp_serverfd) < 0) {
+		return -1;
 	}
 
 	make_server_info(ip, port, &server_info);
 
-	retval = connect(temp_serverfd, (struct sockaddr *)&server_info, sizeof(server_info));
-	if (retval < 0) {
+	if (connect(temp_serverfd, (struct sockaddr *)&server_info, sizeof(server_info)) < 0) {
 		puts("Cannot connect to the server");
 		close(temp_serverfd);
-		return retval;
+		return -1;
 	}
 
 	*serverfd = temp_serverfd;
-	return retval;
+	return 0;
 }
 
 int main(int argc, char **argv) {
-	int serverfd, retval = 0, ip, udp_port;
+	int serverfd, ip, udp_port;
 
 	if (argc != 4) {
 		usage();
 	}
 
-	retval = map_hostname(argv[1], &ip);
-	if (retval < 0){
-		return retval;
+	/* create tcp connection */
+	if (map_hostname(argv[1], &ip) < 0
+	 || make_tcp_connection(ip, atoi(argv[2]), &serverfd) < 0) {
+		return -1;
 	}
 
-	retval = make_tcp_connection(ip, atoi(argv[2]), &serverfd);
-	if (retval < 0) {
-		return retval;
+	/* negotiate the udp port */
+	if (start_negotiation(serverfd) < 0
+		|| get_udp_port(serverfd, &udp_port) < 0) {
+		close(serverfd);
+		return -1;
 	}
 
-	retval = start_negotiation(serverfd);
-	if (retval < 0) {
-		goto MAIN_BAD_DEALLOC;
-	}
-
-	retval = get_udp_port(serverfd, &udp_port);
-	if (retval < 0) {
-		goto MAIN_BAD_DEALLOC;
-	}
-
+	/* we're done with the tcp negotiation */
 	close(serverfd);
 
-	retval = send_and_recieve_msg(ip, udp_port, argv[3]);
-	/* ignore return value as we are done */
-
-	return retval;
-
-MAIN_BAD_DEALLOC:
-	close(serverfd);
-	return retval;
+	return send_and_recieve_msg(ip, udp_port, argv[3]);
 }
