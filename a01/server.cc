@@ -12,7 +12,8 @@
 #include <string> /* std::string */
 #include <algorithm> /* std::reverse */
 
-static int get_and_reply_msg(int udp_socketfd){
+/* UDP socket has been opened... send the reversed message. Then close the socket and continue getting more requests from TCP  */
+static int get_and_reply_msg(int udp_socketfd) {
 	char buf[BUF_SIZE] = {0};
 	struct sockaddr_in client_info;
 	socklen_t info_len = sizeof(struct sockaddr_in);
@@ -27,6 +28,7 @@ static int get_and_reply_msg(int udp_socketfd){
 	return 0;
 }
 
+/* Complete the UDP port negotiation by openning a socket & sending back the port number */
 static int reply_udp_port(int clientfd) {
 	int count, port, udp_socketfd;
 	char port_buf[BUF_SIZE] = {0};
@@ -51,6 +53,7 @@ static int reply_udp_port(int clientfd) {
 	return 0;
 }
 
+/* Handle requests (in our case, it would be the number 13) */
 static int handle_requests(int serverfd) {
 	int clientfd, count, request_num;
 	char buf[BUF_SIZE];
@@ -72,6 +75,7 @@ static int handle_requests(int serverfd) {
 		return -1;
 	}
 
+	/* get and process request number */
 	request_num = buf[0];
 	printf("GOT request: %d\n", request_num);
 

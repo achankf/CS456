@@ -34,7 +34,7 @@ int make_bind_socket(int port, int type, int *serverfd) {
 	server_info.sin_family = AF_INET;
 	server_info.sin_addr.s_addr = htonl(INADDR_ANY);
 
-	while (true){
+	while (true) {
 		server_info.sin_port = htons(port + i);
 		retval = bind(temp_serverfd, (struct sockaddr*) &server_info, sizeof(server_info));
 
@@ -58,7 +58,7 @@ int make_bind_socket(int port, int type, int *serverfd) {
 	return retval;
 }
 
-int make_udp_socket(int *fd, int *port){
+int make_udp_socket(int *fd, int *port) {
 	int retval = 0, i = 0, num_tries = 10000;
 
 	*port = 2000 + rand() % 20000;

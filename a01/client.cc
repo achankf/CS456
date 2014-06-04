@@ -14,7 +14,7 @@ static void usage() {
 }
 
 /** set up the server address structure */
-static void make_server_info(int ip, int port, struct sockaddr_in *server_info){
+static void make_server_info(int ip, int port, struct sockaddr_in *server_info) {
 	assert(server_info != NULL);
 	memset(server_info, 0, sizeof(struct sockaddr_in));
 	server_info->sin_family = AF_INET;
@@ -23,12 +23,12 @@ static void make_server_info(int ip, int port, struct sockaddr_in *server_info){
 }
 
 /** Turn hostname into its IP address */
-static int map_hostname(char *hostname, int *ip){
+static int map_hostname(char *hostname, int *ip) {
 	struct hostent* server_entity;
 
 	assert(hostname != NULL);
 	assert(ip != NULL);
-	
+
 	server_entity =gethostbyname(hostname);
 	if (server_entity == NULL) {
 		puts("Cannot resolve hostname");
@@ -72,7 +72,7 @@ static int get_udp_port(int serverfd, int *udp_port) {
 	return 0;
 }
 
-static int send_and_recieve_msg(int ip, int port, char *msg){
+static int send_and_recieve_msg(int ip, int port, char *msg) {
 	struct sockaddr_in server_info;
 	int udp_socketfd;
 	char buf[BUF_SIZE] = {0};
@@ -125,13 +125,13 @@ int main(int argc, char **argv) {
 
 	/* create tcp connection */
 	if (map_hostname(argv[1], &ip) < 0
-	 || make_tcp_connection(ip, atoi(argv[2]), &serverfd) < 0) {
+	        || make_tcp_connection(ip, atoi(argv[2]), &serverfd) < 0) {
 		return -1;
 	}
 
 	/* negotiate the udp port */
 	if (start_negotiation(serverfd) < 0
-		|| get_udp_port(serverfd, &udp_port) < 0) {
+	        || get_udp_port(serverfd, &udp_port) < 0) {
 		close(serverfd);
 		return -1;
 	}
