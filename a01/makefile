@@ -1,4 +1,4 @@
-CFLAGS = -pedantic -ggdb -pedantic-errors -Wall -Werror
+CFLAGS = -std=c++98 -ggdb -pedantic-errors -Wall -Werror
 
 all : 
 

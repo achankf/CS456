@@ -1,0 +1,21 @@
+The codes were written in C++, and can be compiled in any compiler that supports the C++98 standard.
+
+The Make file is written for the GNU Make 3.81 (the version on the student server).
+
+The codes were developed under the following linux servers:
+* ubuntu1204-002.student.cs.uwaterloo.ca (server)
+* ubuntu1204-004.student.cs.uwaterloo.ca (client)
+
+Since the CPU type may be different, so both the client and the server must be compiled separately.
+
+To run the server, do the following:
+* unpack the tarball in any location that you'd like to run it
+* run ``make server"
+* run ``./server"
+* At this point, you should be able to see the value of n_port.
+
+Then for the client, do the following:
+* unpack the tarball
+* run ``make client"
+* run ``./client ubuntu1204-002 [n_port] [the message]"
+* then you should be able to the message in reverse order
