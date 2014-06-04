@@ -9,7 +9,7 @@ The codes were developed under the following linux servers:
 Since the CPU type may be different, so both the client and the server must be compiled separately.
 
 To run the server, do the following:
-* unpack the tarball in any location that you'd like to run it
+* unpack the tarball in any location that you'd like to run it (remember to make a new directory first)
 * run ``make server"
 * run ``./server"
 * At this point, you should be able to see the value of n_port.
