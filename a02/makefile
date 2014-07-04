@@ -1,3 +1,4 @@
 all: 
 	rm -f *.class
-	javac *.java
+	cp ~/workspace/a02/src/*.java .
+	javac Re*.java Sender*java
