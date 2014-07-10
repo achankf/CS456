@@ -41,6 +41,15 @@ public final class UdpServer {
 		udpSocket.send(sendPacket);
 	}
 
+	/**
+	 * This method is for the purpose of logging seqnum for the sender.
+	 */
+	private void sendDataPacket(Packet packet, PrintStream log)
+			throws IOException {
+		sendSinglePacket(packet);
+		log.println(packet.getSeqNum());
+	}
+
 	private Packet recievePacket() throws IOException {
 		byte[] receiveData = new byte[1024];
 		DatagramPacket receivePacket = new DatagramPacket(receiveData,
@@ -75,9 +84,10 @@ public final class UdpServer {
 		return Packet.createPacket(seqNum, chunk);
 	}
 
-	private void sendAllPackets(Iterable<Packet> packets) throws IOException {
+	private void sendAllPackets(Iterable<Packet> packets, PrintStream log)
+			throws IOException {
 		for (Packet packet : packets) {
-			sendSinglePacket(packet);
+			sendDataPacket(packet, log);
 		}
 	}
 
@@ -87,7 +97,8 @@ public final class UdpServer {
 		}
 	}
 
-	private void sendHelper(InputStream is) throws IOException {
+	private void sendHelper(InputStream is, PrintStream seqLog,
+			PrintStream ackLog) throws IOException {
 		int seqNum = 0, base = 0;
 		LinkedList<Packet> packets = new LinkedList<Packet>();
 
@@ -101,7 +112,7 @@ public final class UdpServer {
 			seqNum++;
 		}
 
-		sendAllPackets(packets);
+		sendAllPackets(packets, seqLog);
 
 		Date start = new Date();
 
@@ -111,7 +122,7 @@ public final class UdpServer {
 
 			// handle timeout
 			if (now.getTime() - start.getTime() > Constants.TIMEOUT) {
-				sendAllPackets(packets);
+				sendAllPackets(packets, seqLog);
 				start = now;
 			}
 
@@ -121,6 +132,9 @@ public final class UdpServer {
 				// timeout or other error
 				continue;
 			}
+
+			// log ACK number
+			ackLog.println(ack);
 
 			// Get the number of packets being ACKed
 			int numAcked = ack - base;
@@ -144,7 +158,7 @@ public final class UdpServer {
 					break;
 				}
 				packets.add(nextPacket);
-				sendSinglePacket(nextPacket);
+				sendDataPacket(nextPacket, seqLog);
 				seqNum++;
 			}
 
@@ -159,14 +173,19 @@ public final class UdpServer {
 	public void send() throws IOException {
 		InputStream is = new BufferedInputStream(
 				new FileInputStream(targetFile));
+		PrintStream ackLog = new PrintStream(new FileOutputStream("ack.log"));
+		PrintStream seqLog = new PrintStream(new FileOutputStream("seqnum.log"));
 		try {
-			sendHelper(is);
+			sendHelper(is, seqLog, ackLog);
 		} finally {
+			ackLog.close();
+			seqLog.close();
 			is.close();
 		}
 	}
 
-	private void receiveHelper(PrintStream ps) throws IOException {
+	private void receiveHelper(PrintStream ps, PrintStream arrvLog)
+			throws IOException {
 		int expected = 0;
 
 		boolean firstTime = true;
@@ -179,6 +198,10 @@ public final class UdpServer {
 			} catch (IOException e) {
 				// timeout and other errors
 				continue;
+			}
+
+			if (packet.getType() == Constants.DATA) {
+				arrvLog.println(packet.getSeqNum());
 			}
 
 			if (packet.getSeqNum() != expected % Constants.SEQNUM_MODULO) {
@@ -215,10 +238,12 @@ public final class UdpServer {
 	// Sets up the PrintStream and then call its helper for receiving packets
 	public void receive() throws IOException {
 		PrintStream ps = new PrintStream(new FileOutputStream(targetFile));
-
+		PrintStream arrvLog = new PrintStream(new FileOutputStream(
+				"arrival.log"));
 		try {
-			receiveHelper(ps);
+			receiveHelper(ps, arrvLog);
 		} finally {
+			arrvLog.close();
 			ps.close();
 		}
 	}
