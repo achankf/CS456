@@ -1,4 +1,5 @@
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -173,8 +174,10 @@ public final class UdpServer {
 	public void send() throws IOException {
 		InputStream is = new BufferedInputStream(
 				new FileInputStream(targetFile));
-		PrintStream ackLog = new PrintStream(new FileOutputStream("ack.log"));
-		PrintStream seqLog = new PrintStream(new FileOutputStream("seqnum.log"));
+		PrintStream ackLog = new PrintStream(new BufferedOutputStream(
+				new FileOutputStream("ack.log")));
+		PrintStream seqLog = new PrintStream(new BufferedOutputStream(
+				new FileOutputStream("seqnum.log")));
 		try {
 			sendHelper(is, seqLog, ackLog);
 		} finally {
@@ -204,7 +207,7 @@ public final class UdpServer {
 				arrvLog.println(packet.getSeqNum());
 			}
 
-			if (packet.getSeqNum() != expected % Constants.SEQNUM_MODULO) {
+			if (packet.getSeqNum() != expected) {
 				/*
 				 * it is possible that the first packet is lost and we got the
 				 * second packet here for the first time -- thus do not respond
@@ -224,7 +227,8 @@ public final class UdpServer {
 			case Constants.DATA:
 				ps.print(new String(packet.getData()));
 				sendSinglePacket(Packet.createACK(expected));
-				expected++;
+				// mod ``expected" to prevent integer overflow
+				expected = (expected + 1) % Constants.SEQNUM_MODULO;
 				break;
 			case Constants.EOT:
 				break RECEIVER_LOOP;
@@ -237,9 +241,10 @@ public final class UdpServer {
 
 	// Sets up the PrintStream and then call its helper for receiving packets
 	public void receive() throws IOException {
-		PrintStream ps = new PrintStream(new FileOutputStream(targetFile));
-		PrintStream arrvLog = new PrintStream(new FileOutputStream(
-				"arrival.log"));
+		PrintStream ps = new PrintStream(new BufferedOutputStream(
+				new FileOutputStream(targetFile)));
+		PrintStream arrvLog = new PrintStream(new BufferedOutputStream(
+				new FileOutputStream("arrival.log")));
 		try {
 			receiveHelper(ps, arrvLog);
 		} finally {
