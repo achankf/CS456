@@ -1,9 +1,7 @@
 // common Packet class used by both SENDER and RECEIVER
 
-import java.io.BufferedInputStream;
-import java.io.InputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 
 public class Packet {
 
@@ -15,26 +13,26 @@ public class Packet {
 	/* CONSTRUCTORS */
 
 	// hidden constructor to prevent creation of invalid Packets
-	private Packet(int Type, int SeqNum, String strData) throws Exception {
+	private Packet(int Type, int SeqNum, String strData) throws IOException {
 		// if data seqment larger than allowed, then throw exception
-		if (strData.length() > Constants.maxDataLength)
-			throw new Exception("data too large (max 500 chars)");
+		if (strData.length() > Constants.MAX_DATA_LENGTH)
+			throw new IOException("data too large (max 500 chars)");
 
 		type = Type;
-		seqnum = SeqNum % Constants.SeqNumModulo;
+		seqnum = SeqNum % Constants.SEQNUM_MODULO;
 		data = strData;
 	}
 
 	// special Packet constructors to be used in place of hidden constructor
-	public static Packet createACK(int SeqNum) throws Exception {
+	public static Packet createACK(int SeqNum) throws IOException {
 		return new Packet(Constants.ACK, SeqNum, new String());
 	}
 
-	public static Packet createPacket(int SeqNum, String data) throws Exception {
+	public static Packet createPacket(int SeqNum, String data) throws IOException {
 		return new Packet(Constants.DATA, SeqNum, data);
 	}
 
-	public static Packet createEOT(int SeqNum) throws Exception {
+	public static Packet createEOT(int SeqNum) throws IOException {
 		return new Packet(Constants.EOT, SeqNum, new String());
 	}
 
@@ -67,7 +65,7 @@ public class Packet {
 		return buffer.array();
 	}
 
-	public static Packet parseUDPdata(byte[] UDPdata) throws Exception {
+	public static Packet parseUDPdata(byte[] UDPdata) throws IOException {
 		ByteBuffer buffer = ByteBuffer.wrap(UDPdata);
 		int type = buffer.getInt();
 		int seqnum = buffer.getInt();
@@ -75,26 +73,5 @@ public class Packet {
 		byte data[] = new byte[length];
 		buffer.get(data, 0, length);
 		return new Packet(type, seqnum, new String(data));
-	}
-
-	public static ArrayList<Packet> makeDataPackets(InputStream is)
-			throws Exception {
-		ArrayList<Packet> ret = new ArrayList<Packet>();
-		int read = 0;
-		int seqNum = 0;
-		InputStream bis = new BufferedInputStream(is);
-		StringBuilder builder = new StringBuilder();
-
-		while (read != -1) {
-			read = bis.read();
-			if (read == -1 || builder.length() == Constants.maxDataLength) {
-				ret.add(Packet.createPacket(seqNum, builder.toString()));
-				seqNum++;
-				// System.out.print(builder.toString());
-				builder.setLength(0);
-			}
-			builder.append((char) read);
-		}
-		return ret;
 	}
 }

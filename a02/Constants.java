@@ -1,11 +1,11 @@
 public class Constants {
 	// constants
-	public final static int maxDataLength = 500;
-	public final static int SeqNumModulo = 32;
-	public final static int windowSize = 10;
-	public final static int timeout = 1000;
+	public static final int MAX_DATA_LENGTH = 500;
+	public static final int SEQNUM_MODULO = 32;
+	public static final int WINDOW_SIZE = 10;
+	public static final int TIMEOUT = 10;
 
-	public final static int ACK = 0;
-	public final static int DATA = 1;
-	public final static int EOT = 2;
+	public static final int ACK = 0;
+	public static final int DATA = 1;
+	public static final int EOT = 2;
 }
