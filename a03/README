@@ -1,0 +1,11 @@
+The codes were written for the C++03 standard, and you can probably compile the codes in any Linux machine that has g++ support for C++03.
+
+The codes were tested in the student environment (linux.student.cs.uwaterloo.ca).
+
+Originally, I intended to use C, but then I realize that I want to use C++'s containers in order to simplify my life...
+
+In any case, the main driver is located in ``router.cc" -- it basically filters the input arguments and pass it to the API method in routing.h, which is where I implemented the actual routing stuff. I also reused some socket-related methods from assignment 1, which is located in ``common.h"
+
+Please run the codes the same way as described in the document.
+
+Finally, the codes do not terminate and run in an infinite loop -- though the emulator will eventually stop printing anything and become ``stuck" (i.e. all routers have completed the topology). The justification of not terminating the application is that, other than being lazy, I think that real life routers should be online all the time, refreshing topology, and answering requests with the computed paths, instead of shutting down immediately.
