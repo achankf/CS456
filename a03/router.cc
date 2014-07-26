@@ -6,10 +6,11 @@
 #include <netinet/in.h>
 #include <errno.h>
 #include <string.h>
+#include <cstdio>
 
 void usage(char *name) {
 	assert(name != NULL);
-	ERROR("%s <router_id> <nse_host> <nse_port> <router_port>\n", name);
+	printf("%s <router_id> <nse_host> <nse_port> <router_port>\n", name);
 }
 
 int main(int argc, char **argv) {
@@ -25,26 +26,24 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
-	DEBUG("input args parsed: %d %d %d %d\n", rid, nse_ip, nse_port, router_port);
-
 	assert((unsigned int) rid < 0xffff
 		&& (unsigned int) nse_port < 0xffff
 		&& (unsigned int) router_port < 0xffff);
 
 	if (make_bind_udp_socket(router_port, &router_fd) < 0) {
-		ERROR("%s. Errmsg: %s\n", "Cannot create and bind UDP socket", strerror(errno));
+		printf("%s. Errmsg: %s\n", "Cannot create and bind UDP socket", strerror(errno));
 		return -1;
 	}
 
 	make_server_info(nse_ip, nse_port, &nse_info);
-	make_server_info(nse_ip, nse_port, &nse_info);
 
 	if (make_routing_table(rid, router_fd, &nse_info) < 0) {
-		ERROR("%s. Errmsg: %s\n", "Cannot make the routing table", strerror(errno));
+		printf("%s. Errmsg: %s\n", "Cannot make the routing table", strerror(errno));
 		close(router_fd);
 		return -1;
 	}
 
-	/* Routing table is complete... do something with it  */
+	/* must not reach here */
+	assert(false);
 	return close(router_fd);
 }

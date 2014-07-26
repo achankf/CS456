@@ -1,7 +1,9 @@
-CFLAGS = -O2 -std=c99  #-ggdb -pedantic-errors -Wall -Werror
+#CFLAGS = -DNDEBUG -O2 -std=c++03  #-ggdb -pedantic-errors -Wall -Werror
+CFLAGS = -O2 -std=c++03  #-ggdb -pedantic-errors -Wall -Werror
+CFLAGS = -O2 -std=c++03  -ggdb -pedantic-errors -Wall -Werror
 
 all : 
-	gcc $(CFLAGS) *.c -o router
+	g++ $(CFLAGS) *.cc -o router
 
 .phony : clean
 

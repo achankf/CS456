@@ -17,6 +17,7 @@ struct pkt_INIT;
 struct link_cost;
 struct circuit_DB;
 
+struct node;
+
 int make_routing_table(uint32_t rid, int router_fd, struct sockaddr_in *nse_info);
-int parseCircuitDB(char buf[BUF_SIZE], size_t length, struct circuit_DB *ret);
 #endif
